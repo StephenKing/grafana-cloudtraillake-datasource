@@ -1,0 +1,28 @@
+{
+  "$schema": "https://raw.githubusercontent.com/grafana/grafana/master/docs/sources/developers/plugins/plugin.schema.json",
+  "type": "datasource",
+  "name": "Cloud Trail Lake",
+  "id": "emnify-cloudtraillake-datasource",
+  "metrics": true,
+  "backend": true,
+  "executable": "gpx_cloud_trail_lake",
+  "info": {
+    "description": "Data source to query aws cloud trail lake",
+    "author": {
+      "name": "Emnify"
+    },
+    "keywords": ["datasource"],
+    "logos": {
+      "small": "img/logo.svg",
+      "large": "img/logo.svg"
+    },
+    "links": [],
+    "screenshots": [],
+    "version": "%VERSION%",
+    "updated": "%TODAY%"
+  },
+  "dependencies": {
+    "grafanaDependency": ">=9.5.3",
+    "plugins": []
+  }
+}
