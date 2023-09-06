@@ -9,7 +9,7 @@
   "info": {
     "description": "Data source to query aws cloud trail lake",
     "author": {
-      "name": "Emnify"
+      "name": "emnify"
     },
     "keywords": ["datasource"],
     "logos": {

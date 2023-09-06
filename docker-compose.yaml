@@ -2,7 +2,7 @@ version: '3.0'
 
 services:
   grafana:
-    container_name: 'emnify-cloudtraillake-datasource'
+    container_name: 'emnify-plugin-datasource'
     build:
       context: ./.config
       args:
@@ -11,7 +11,7 @@ services:
     ports:
       - 3000:3000/tcp
     volumes:
-      - ./dist:/var/lib/grafana/plugins/emnify-cloudtraillake-datasource
+      - ./dist:/var/lib/grafana/plugins/emnify-plugin-datasource
       - ./provisioning:/etc/grafana/provisioning
     environment:
-      - GF_ALLOW_LOADING_UNSIGNED_PLUGINS=emnify-cloudtraillake-datasource
+      - GF_ALLOW_LOADING_UNSIGNED_PLUGINS=emnify-plugin-datasource

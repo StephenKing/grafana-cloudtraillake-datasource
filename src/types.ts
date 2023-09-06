@@ -1,24 +1,46 @@
-import { DataQuery, DataSourceJsonData } from '@grafana/data';
+import { DataSourceJsonData, SelectableValue } from '@grafana/data';
+import { SQLQuery } from '@grafana/aws-sdk';
 
-export interface MyQuery extends DataQuery {
-  queryText?: string;
-  constant: number;
+export enum FormatOptions {
+  TimeSeries,
+  Table,
+  Logs,
 }
 
-export const DEFAULT_QUERY: Partial<MyQuery> = {
-  constant: 6.5,
-};
+export const SelectableFormatOptions: Array<SelectableValue<FormatOptions>> = [
+  {
+    label: 'Time Series',
+    value: FormatOptions.TimeSeries,
+  },
+  {
+    label: 'Table',
+    value: FormatOptions.Table,
+  },
+  {
+    label: 'Logs',
+    value: FormatOptions.Logs,
+  },
+];
 
+export interface CtlQuery extends SQLQuery {
+  format: FormatOptions;
+  connectionArgs: {
+    region?: string;
+  };
+
+  queryID?: string;
+}
+export const defaultKey = '__default';
+export const defaultQuery: Partial<CtlQuery> = {
+  format: FormatOptions.Table,
+  rawSQL: '',
+  connectionArgs: {
+    region: defaultKey,
+  },
+};
 /**
  * These are options configured for each DataSource instance
  */
-export interface MyDataSourceOptions extends DataSourceJsonData {
-  path?: string;
+export interface CtlDataSourceOptions extends DataSourceJsonData {
 }
 
-/**
- * Value that is used in the backend, but never sent over HTTP to the frontend
- */
-export interface MySecureJsonData {
-  apiKey?: string;
-}

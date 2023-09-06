@@ -2,7 +2,16 @@ module github.com/emnify/cloud-trail-lake
 
 go 1.19
 
-require github.com/grafana/grafana-plugin-sdk-go v0.173.0
+require (
+	github.com/aws/aws-sdk-go v1.44.323
+	github.com/grafana/grafana-aws-sdk v0.19.1
+	github.com/grafana/grafana-plugin-sdk-go v0.173.0
+	github.com/grafana/sqlds/v2 v2.3.10
+	github.com/pkg/errors v0.9.1
+	github.com/stretchr/testify v1.8.3
+	github.com/viant/toolbox v0.34.5
+	gotest.tools v2.2.0+incompatible
+)
 
 require (
 	cloud.google.com/go/compute/metadata v0.2.3 // indirect
@@ -14,9 +23,11 @@ require (
 	github.com/cheekybits/genny v1.0.0 // indirect
 	github.com/chromedp/cdproto v0.0.0-20220208224320-6efb837e6bc2 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.2 // indirect
+	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/elazarl/goproxy v0.0.0-20230731152917-f99041a5c027 // indirect
 	github.com/fatih/color v1.15.0 // indirect
 	github.com/getkin/kin-openapi v0.112.0 // indirect
+	github.com/go-errors/errors v1.4.2 // indirect
 	github.com/go-logr/logr v1.2.4 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-openapi/jsonpointer v0.19.5 // indirect
@@ -34,7 +45,9 @@ require (
 	github.com/hashicorp/go-plugin v1.4.9 // indirect
 	github.com/hashicorp/yamux v0.1.1 // indirect
 	github.com/invopop/yaml v0.1.0 // indirect
+	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
+	github.com/jpillora/backoff v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/compress v1.13.1 // indirect
 	github.com/magefile/mage v1.15.0 // indirect
@@ -51,6 +64,7 @@ require (
 	github.com/oklog/run v1.1.0 // indirect
 	github.com/olekukonko/tablewriter v0.0.5 // indirect
 	github.com/pierrec/lz4/v4 v4.1.8 // indirect
+	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/prometheus/client_golang v1.14.0 // indirect
 	github.com/prometheus/client_model v0.3.0 // indirect
 	github.com/prometheus/common v0.42.0 // indirect
