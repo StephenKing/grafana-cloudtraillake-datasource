@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/emnify/cloud-trail-lake/pkg/plugin/routes"
 	"github.com/grafana/grafana-aws-sdk/pkg/awsds"
 	"os"
 
@@ -14,6 +15,8 @@ func main() {
 	ds := awsds.NewAsyncAWSDatasource(s)
 	ds.Completable = s
 	ds.EnableMultipleConnections = true
+	ds.CustomRoutes = routes.New(s).Routes()
+
 	// Start listening to requests sent from Grafana. This call is blocking so
 	// it won't finish until Grafana shuts down the process or the plugin choose
 	// to exit by itself using os.Exit. Manage automatically manages life cycle

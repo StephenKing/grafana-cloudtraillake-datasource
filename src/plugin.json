@@ -5,6 +5,7 @@
   "id": "emnify-cloudtraillake-datasource",
   "metrics": true,
   "backend": true,
+  "logs": true,
   "executable": "gpx_cloud_trail_lake",
   "info": {
     "description": "Data source to query aws cloud trail lake",
