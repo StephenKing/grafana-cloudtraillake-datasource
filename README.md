@@ -1,10 +1,8 @@
-# Grafana data source plugin template
+# [WIP] Grafana data source plugin for AWS CloudTrail Lake
 
-This template is a starting point for building a Data Source Plugin for Grafana.
+Work in progress, with a lot of copy&paste from the [Redshift](github.com/grafana/redshift-datasource) and [Athena(async implementation)]()  plugins
 
-## What are Grafana data source plugins?
-
-Grafana supports a wide range of data sources, including Prometheus, MySQL, and even Datadog. There’s a good chance you can already visualize metrics from the systems you have set up. In some cases, though, you already have an in-house metrics solution that you’d like to add to your Grafana dashboards. Grafana Data Source Plugins enables integrating such solutions with Grafana.
+-----
 
 ## Getting started
 
