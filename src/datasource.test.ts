@@ -1,15 +1,15 @@
 import { DataQueryRequest, DataSourceInstanceSettings, dateTime } from '@grafana/data';
 import * as runtime from '@grafana/runtime';
-import { AthenaDataSourceOptions, AthenaQuery, FormatOptions } from 'types';
+import { CtlDataSourceOptions, CtlQuery, FormatOptions } from 'types';
 
 import { DataSource } from './datasource';
 
 interface TestContext {
-  instanceSettings: DataSourceInstanceSettings<AthenaDataSourceOptions>;
+  instanceSettings: DataSourceInstanceSettings<CtlDataSourceOptions>;
   ds: DataSource;
 }
 
-describe('AthenaDatasource', () => {
+describe('CtlDatasource', () => {
   const ctx: TestContext = {} as TestContext;
   const mockGetVariables = jest.fn().mockReturnValue([]);
 
@@ -20,14 +20,10 @@ describe('AthenaDatasource', () => {
     updateTimeRange: jest.fn(),
   }));
 
-  const defaultQuery: AthenaQuery = {
+  const defaultQuery: CtlQuery = {
     connectionArgs: {
       region: 'defaultRegion',
-      catalog: 'defaultCatalog',
-      database: 'defaultDatabase',
     },
-    table: 'defaultTable',
-    column: 'defaultColumn',
     refId: 'testQuery',
     rawSQL: '',
     format: FormatOptions.TimeSeries,
@@ -35,7 +31,7 @@ describe('AthenaDatasource', () => {
   const start = dateTime(new Date());
   const timeRange = { from: start, to: start.add(3600 * 1000, 'millisecond') };
   const rawTimeRange = { from: timeRange.from.toString(), to: timeRange.to.toString() };
-  const queryRequest: DataQueryRequest<AthenaQuery> = {
+  const queryRequest: DataQueryRequest<CtlQuery> = {
     ...defaultQuery,
     range: { ...timeRange, raw: rawTimeRange },
     requestId: 'testRequest',
@@ -45,21 +41,21 @@ describe('AthenaDatasource', () => {
     startTime: start.valueOf(),
     timezone: 'TZ',
     targets: [defaultQuery],
-    app: 'athena',
+    app: 'Ctl',
   };
 
   beforeEach(() => {
     jest.clearAllMocks();
 
     ctx.instanceSettings = {
-      name: 'testAthena',
+      name: 'testCtl',
       jsonData: {
         defaultRegion: 'testRegion',
         catalog: 'testCatalog',
         database: 'testDatabase',
         workgroup: 'testWorkgroup',
       },
-    } as unknown as DataSourceInstanceSettings<AthenaDataSourceOptions>;
+    } as unknown as DataSourceInstanceSettings<CtlDataSourceOptions>;
     ctx.ds = new DataSource(ctx.instanceSettings);
     ctx.ds.getResource = jest.fn().mockImplementation((path: string) => {
       switch (path) {
@@ -93,60 +89,6 @@ describe('AthenaDatasource', () => {
 
       expect(regionsResponse).toHaveLength(response.length);
       expect(regionsResponse).toEqual(response);
-    });
-  });
-
-  describe('When performing getCatalogs', () => {
-    it('should return a list of catalogs', async () => {
-      const response = setupCatalogsResponse();
-      const catalogsResponse = await ctx.ds.getCatalogs(defaultQuery);
-
-      expect(catalogsResponse).toHaveLength(response.length);
-      expect(catalogsResponse).toEqual(response);
-    });
-  });
-
-  describe('When performing getDatabases', () => {
-    it('should return a list of databases', async () => {
-      const response = setupDatabasesResponse();
-      const databasesResponse = await ctx.ds.getDatabases(defaultQuery);
-
-      expect(databasesResponse).toHaveLength(response.length);
-      expect(databasesResponse).toEqual(response);
-    });
-  });
-
-  describe('When performing getTables', () => {
-    it('should return a list of tables', async () => {
-      const response = setupTablesResponse();
-      const tablesResponse = await ctx.ds.getTables(defaultQuery);
-
-      expect(tablesResponse).toHaveLength(response.length);
-      expect(tablesResponse).toEqual(response);
-    });
-  });
-
-  describe('When performing getColumns', () => {
-    it('should return a list of columns', async () => {
-      const response = setupColumnsResponse();
-      const columnsResponse = await ctx.ds.getColumns(defaultQuery);
-
-      expect(columnsResponse).toHaveLength(response.length);
-      expect(columnsResponse).toEqual(response);
-    });
-  });
-
-  describe('isResultReuseSupported()', () => {
-    it('should support result reuse if athena engine version is greater than or equal to 3', async () => {
-      const workgroupEngineVersionResponse = await ctx.ds.isResultReuseSupported();
-      expect(workgroupEngineVersionResponse).toBeTruthy();
-    });
-
-    it('should not support result reuse if athena engine version is 2', async () => {
-      ctx.ds.postResource = jest.fn().mockResolvedValue('Athena engine version 2');
-
-      const workgroupEngineVersionResponse = await ctx.ds.isResultReuseSupported();
-      expect(workgroupEngineVersionResponse).toBeFalsy();
     });
   });
 
@@ -211,5 +153,5 @@ function setupColumnsResponse() {
 }
 
 function setupWorkgroupEngineVersionResponse(version?: string) {
-  return version || 'Athena engine version 3';
+  return version || 'Ctl engine version 3';
 }
