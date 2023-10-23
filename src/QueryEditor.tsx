@@ -1,5 +1,4 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { config } from '@grafana/runtime';
 import { QueryEditorProps } from '@grafana/data';
 import { QueryEditorHeader } from '@grafana/aws-sdk';
 import { CtlDataSourceOptions, CtlQuery } from './types';
