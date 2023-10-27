@@ -10,10 +10,11 @@ import (
 
 	"github.com/grafana/grafana-aws-sdk/pkg/awsds"
 	sqlAPI "github.com/grafana/grafana-aws-sdk/pkg/sql/api"
+	sqlDriver "github.com/grafana/grafana-aws-sdk/pkg/sql/driver"
 	asyncSQLDriver "github.com/grafana/grafana-aws-sdk/pkg/sql/driver/async"
 )
 
-const DriverName string = "redshift"
+const DriverName string = "cloudtraillake"
 
 var (
 	openFromSessionMutex sync.Mutex
@@ -60,4 +61,9 @@ func New(dsAPI sqlAPI.AWSAPI) (asyncSQLDriver.Driver, error) {
 	d.connection = asyncSQLDriver.NewConnection(d.asyncDB)
 	sql.Register(name, d)
 	return d, nil
+}
+
+// NewSync registers a new synchronous driver with a unique name
+func NewSync(dsAPI sqlAPI.AWSAPI) (sqlDriver.Driver, error) {
+	return New(dsAPI)
 }

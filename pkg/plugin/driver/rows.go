@@ -6,6 +6,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/cloudtrail"
 	"github.com/aws/aws-sdk-go/service/cloudtrail/cloudtrailiface"
+	"github.com/grafana/grafana-plugin-sdk-go/backend/log"
 	"io"
 )
 
@@ -56,6 +57,7 @@ func (r *Rows) Close() error {
 // size as the Columns() are wide. io.EOF should be returned when there are no more rows.
 func (r *Rows) Next(dest []driver.Value) error {
 	if r.done {
+		log.DefaultLogger.Info("Next done")
 		return io.EOF
 	}
 
@@ -73,12 +75,14 @@ func (r *Rows) Next(dest []driver.Value) error {
 		}
 	}
 
-	// Shift to next row
-	current := r.result.QueryResultRows[0]
-	dest = append(dest, current)
-	//if err := convertRow(r.result.ColumnMetadata, current, dest); err != nil {
-	//	return err
-	//}
+	// Read the row and iterate over all the column->value pairs to store the value
+	i := 0
+	for _, row := range r.result.QueryResultRows[0] {
+		for _, value := range row {
+			dest[i] = *value
+			i++
+		}
+	}
 
 	r.result.QueryResultRows = r.result.QueryResultRows[1:]
 	return nil
@@ -87,6 +91,15 @@ func (r *Rows) Next(dest []driver.Value) error {
 // Columns returns the names of the columns.
 func (r *Rows) Columns() []string {
 	columnNames := []string{}
-	columnNames = append(columnNames, "FakeColumn")
+
+	if len(r.result.QueryResultRows) == 0 {
+		return columnNames
+	}
+
+	for _, columnData := range r.result.QueryResultRows[0] {
+		for key, _ := range columnData {
+			columnNames = append(columnNames, key)
+		}
+	}
 	return columnNames
 }

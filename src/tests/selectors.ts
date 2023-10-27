@@ -6,6 +6,14 @@ export const Components = {
       input: 'Region',
       wrapper: 'data-testid onloadregion',
     },
+    testOption: {
+      input: 'TestOption1',
+      wrapper: 'data-testid onloadtestoption',
+    },
+    testOption2: {
+      input: 'TestOption2',
+      wrapper: 'data-testid onloadtestoption2',
+    },
   },
   QueryEditor: {
     CodeEditor: {

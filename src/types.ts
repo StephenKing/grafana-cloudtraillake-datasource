@@ -1,5 +1,5 @@
-import { DataSourceJsonData, SelectableValue } from '@grafana/data';
-import { SQLQuery } from '@grafana/aws-sdk';
+import {DataSourceSettings, SelectableValue} from '@grafana/data';
+import {AwsAuthDataSourceJsonData, AwsAuthDataSourceSecureJsonData, SQLQuery} from '@grafana/aws-sdk';
 
 export enum FormatOptions {
   TimeSeries,
@@ -26,6 +26,8 @@ export interface CtlQuery extends SQLQuery {
   format: FormatOptions;
   connectionArgs: {
     region?: string;
+    testOption?: string;
+    testOption2?: string;
   };
 
   queryID?: string;
@@ -41,6 +43,11 @@ export const defaultQuery: Partial<CtlQuery> = {
 /**
  * These are options configured for each DataSource instance
  */
-export interface CtlDataSourceOptions extends DataSourceJsonData {
+export interface CtlDataSourceOptions extends AwsAuthDataSourceJsonData {
+  testOption?: string
+  testOption2?: string
 }
 
+export interface CtlDataSourceSecureJsonData extends AwsAuthDataSourceSecureJsonData {}
+
+export type CtlDataSourceSettings = DataSourceSettings<CtlDataSourceOptions, CtlDataSourceSecureJsonData>;

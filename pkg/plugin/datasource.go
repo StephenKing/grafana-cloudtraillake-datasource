@@ -4,12 +4,14 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"github.com/emnify/cloud-trail-lake/pkg/plugin/api"
 	"github.com/emnify/cloud-trail-lake/pkg/plugin/driver"
 	"github.com/emnify/cloud-trail-lake/pkg/plugin/models"
 	"github.com/grafana/grafana-aws-sdk/pkg/awsds"
 	sqlAPI "github.com/grafana/grafana-aws-sdk/pkg/sql/api"
 	"github.com/grafana/grafana-aws-sdk/pkg/sql/datasource"
+	awsDriver "github.com/grafana/grafana-aws-sdk/pkg/sql/driver"
 	asyncDriver "github.com/grafana/grafana-aws-sdk/pkg/sql/driver/async"
 	sqlModels "github.com/grafana/grafana-aws-sdk/pkg/sql/models"
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
@@ -18,7 +20,6 @@ import (
 	"github.com/grafana/grafana-plugin-sdk-go/data"
 	"github.com/grafana/grafana-plugin-sdk-go/data/sqlutil"
 	"github.com/grafana/sqlds/v2"
-	"github.com/pkg/errors"
 )
 
 // // Make sure CtlDatasource implements required interfaces. This is important to do
@@ -31,6 +32,10 @@ import (
 //	_ backend.CheckHealthHandler = (*CtlDatasource)(nil)
 //)
 
+type ctlQueryArgs struct {
+	Region string
+}
+
 type CtlDatasourceIface interface {
 	sqlds.Driver
 	sqlds.Completable
@@ -40,6 +45,7 @@ type CtlDatasourceIface interface {
 
 type awsDSClient interface {
 	Init(config backend.DataSourceInstanceSettings)
+	GetDB(id int64, options sqlds.Options, settingsLoader sqlModels.Loader, apiLoader sqlAPI.Loader, driverLoader awsDriver.Loader) (*sql.DB, error)
 	GetAsyncDB(id int64, options sqlds.Options, settingsLoader sqlModels.Loader, apiLoader sqlAPI.Loader, driverLoader asyncDriver.Loader) (awsds.AsyncDB, error)
 	GetAPI(id int64, options sqlds.Options, settingsLoader sqlModels.Loader, apiLoader sqlAPI.Loader) (sqlAPI.AWSAPI, error)
 }
@@ -80,8 +86,20 @@ func (s *CtlDatasource) Converters() (sc []sqlutil.Converter) {
 func (s *CtlDatasource) Connect(config backend.DataSourceInstanceSettings, queryArgs json.RawMessage) (*sql.DB, error) {
 
 	log.DefaultLogger.Info("XXXXXX datasource / Connect")
-	// TODO what to do with this method? Only needed for sync queries?
-	return nil, errors.New("did not expect to call Connect method")
+
+	s.awsDS.Init(config)
+	args, err := parseArgs(queryArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["updated"] = config.Updated.String()
+
+	// cloud trail lake datasources require a region to establish a connection, we use a default region if none was provided
+	if args["region"] == "" {
+		args["region"] = sqlModels.DefaultKey
+	}
+
+	return s.awsDS.GetDB(config.ID, args, models.New, api.New, driver.NewSync)
 }
 
 func (s *CtlDatasource) GetAsyncDB(config backend.DataSourceInstanceSettings, queryArgs json.RawMessage) (awsds.AsyncDB, error) {
@@ -251,4 +269,19 @@ func (d *CtlDatasource) CheckHealth(_ context.Context, req *backend.CheckHealthR
 		Status:  status,
 		Message: message,
 	}, nil
+}
+
+func parseArgs(queryArgs json.RawMessage) (sqlds.Options, error) {
+	args := ctlQueryArgs{}
+	if queryArgs != nil {
+		err := json.Unmarshal(queryArgs, &args)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse query args: %w", err)
+		}
+	}
+	options := sqlds.Options{}
+	if args.Region != "" {
+		options[models.Region] = args.Region
+	}
+	return options, nil
 }
