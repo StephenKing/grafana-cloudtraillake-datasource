@@ -8,6 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/cloudtrail/cloudtrailiface"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/log"
 	"io"
+	"time"
 )
 
 type Rows struct {
@@ -75,16 +76,34 @@ func (r *Rows) Next(dest []driver.Value) error {
 		}
 	}
 
-	// Read the row and iterate over all the column->value pairs to store the value
-	i := 0
-	for _, row := range r.result.QueryResultRows[0] {
-		for _, value := range row {
-			dest[i] = *value
-			i++
-		}
+	current := r.result.QueryResultRows[0]
+	err := convertRow(current, dest)
+	if err != nil {
+		return err
 	}
 
 	r.result.QueryResultRows = r.result.QueryResultRows[1:]
+	return nil
+}
+
+func convertRow(data []map[string]*string, ret []driver.Value) error {
+	// Read the row and iterate over all the column->value pairs to store the value
+	i := 0
+	for _, row := range data {
+		for key, value := range row {
+			if key == "eventTime" || key == "time" {
+				log.DefaultLogger.Warn("Attempting to parse datetime", "key", key, "value", value)
+				t, err := time.Parse("2006-01-02 15:04:05", *value)
+				if err != nil {
+					return err
+				}
+				ret[i] = t
+			} else {
+				ret[i] = *value
+			}
+			i++
+		}
+	}
 	return nil
 }
 

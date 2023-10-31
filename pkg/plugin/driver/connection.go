@@ -9,6 +9,7 @@ import (
 	"github.com/grafana/grafana-aws-sdk/pkg/awsds"
 	sqlAPI "github.com/grafana/grafana-aws-sdk/pkg/sql/api"
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
+	"github.com/grafana/grafana-plugin-sdk-go/backend/log"
 )
 
 var _ awsds.AsyncDB = &conn{}
@@ -29,6 +30,7 @@ func (c *conn) StartQuery(ctx context.Context, query string, args ...interface{}
 	if err != nil {
 		return "", err
 	}
+	log.DefaultLogger.Warn("Submitted query", "queryId", output.ID, "query", query)
 	return output.ID, nil
 }
 
@@ -56,11 +58,12 @@ func (c *conn) QueryStatus(ctx context.Context, queryID string) (awsds.QueryStat
 	case cloudtrail.QueryStatusTimedOut:
 		returnStatus = awsds.QueryFailed
 	}
-	backend.Logger.Debug("QueryStatus", "state", status.State, "queryID", queryID)
+	backend.Logger.Warn("QueryStatus", "state", status.State, "queryID", queryID)
 	return returnStatus, nil
 }
 
 func (c *conn) CancelQuery(ctx context.Context, queryID string) error {
+	log.DefaultLogger.Warn("Query canceled", "queryId", queryID)
 	return c.api.Stop(&sqlAPI.ExecuteQueryOutput{ID: queryID})
 
 }

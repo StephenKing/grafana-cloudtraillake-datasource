@@ -16,7 +16,7 @@ import (
 
 func TestConnection_QueryContext(t *testing.T) {
 	c := &conn{
-		api: api.NewFake(&ctlclientmock.MockCtlClient{CalledTimesCountDown: 1},
+		api: api.NewFake(ctlclientmock.MockCtlClient{CalledTimesCountDown: 1},
 			&models.CloudTrailLakeDataSourceSettings{
 				AWSDatasourceSettings: awsds.AWSDatasourceSettings{},
 			}),
