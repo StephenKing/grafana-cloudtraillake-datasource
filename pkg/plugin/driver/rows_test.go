@@ -71,7 +71,7 @@ func Test_convertRow(t *testing.T) {
 			data: &map[string]*string{
 				"my-int": aws.String("1"),
 			},
-			expectedType:  "int32",
+			expectedType:  "int",
 			expectedValue: "1",
 		},
 		//{
@@ -101,35 +101,51 @@ func Test_convertRow(t *testing.T) {
 		{
 			name: "string",
 			data: &map[string]*string{
-				"my-string": aws.String("1"),
+				"my-string": aws.String("foo"),
 			},
 			expectedType:  "string",
 			expectedValue: "foo",
 		},
+		//{
+		//	name: "date",
+		//	// FIXME should have a column called 'time'
+		//	data: &map[string]*string{
+		//		"my-date": aws.String("2008-01-01"),
+		//	},
+		//	expectedType:  "time.Time",
+		//	expectedValue: "2008-01-01 00:00:00 +0000 UTC",
+		//},
 		{
-			name: "date",
+			name: "date in column called 'time'",
 			// FIXME should have a column called 'time'
 			data: &map[string]*string{
-				"my-date": aws.String("2008-01-01"),
-			},
-			expectedType:  "time.Time",
-			expectedValue: "2008-01-01 00:00:00 +0000 UTC",
-		},
-		{
-			name: "timestamp",
-			// FIXME should have a column called 'time'
-			data: &map[string]*string{
-				"my-timestamp": aws.String("2008-01-01 20:00:00.000"),
+				"time": aws.String("2008-01-01 20:00:00.000"),
 			},
 			expectedType:  "time.Time",
 			expectedValue: "2008-01-01 20:00:00 +0000 UTC",
 		},
 		{
-			name:          "null",
-			data:          nil,
-			expectedType:  "<nil>",
-			expectedValue: "<nil>",
+			name: "date in column called 'eventTime'",
+			data: &map[string]*string{
+				"eventTime": aws.String("2008-01-01 20:00:00.000"),
+			},
+			expectedType:  "time.Time",
+			expectedValue: "2008-01-01 20:00:00 +0000 UTC",
 		},
+		{
+			name: "date in arbitrary named column",
+			data: &map[string]*string{
+				"my-date": aws.String("2008-01-01 20:00:00.000"),
+			},
+			expectedType:  "string",
+			expectedValue: "2008-01-01 20:00:00.000",
+		},
+		//{
+		//	name:          "null",
+		//	data:          nil,
+		//	expectedType:  "<nil>",
+		//	expectedValue: "<nil>",
+		//},
 	}
 
 	for _, tt := range tests {
