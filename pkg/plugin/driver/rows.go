@@ -8,6 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/cloudtrail/cloudtrailiface"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/log"
 	"io"
+	"strconv"
 	"time"
 )
 
@@ -90,17 +91,30 @@ func convertRow(data []map[string]*string, ret []driver.Value) error {
 	// Read the row and iterate over all the column->value pairs to store the value
 	i := 0
 	for _, row := range data {
-		for key, value := range row {
+		for key, stringVal := range row {
 			if key == "eventTime" || key == "time" {
-				log.DefaultLogger.Warn("Attempting to parse datetime", "key", key, "value", value)
-				t, err := time.Parse("2006-01-02 15:04:05", *value)
+				log.DefaultLogger.Warn("Attempting to parse datetime", "key", key, "value", stringVal)
+				timeValue, err := time.Parse("2006-01-02 15:04:05", *stringVal)
 				if err != nil {
 					return err
 				}
-				ret[i] = t
-			} else {
-				ret[i] = *value
+				ret[i] = timeValue
+				i++
+				continue
 			}
+
+			intVal, err := strconv.Atoi(*stringVal)
+			if err != nil {
+				log.DefaultLogger.Warn("Could not parse to int", "key", key, "value", stringVal)
+			} else {
+				log.DefaultLogger.Warn("Successfully parsed to int", "key", key, "value", stringVal, "intValue", intVal)
+				ret[i] = intVal
+				i++
+				continue
+			}
+
+			log.DefaultLogger.Warn("Using it as string", "key", key, "value", stringVal)
+			ret[i] = *stringVal
 			i++
 		}
 	}
