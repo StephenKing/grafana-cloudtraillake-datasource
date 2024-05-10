@@ -151,17 +151,25 @@ func macroDateFilter(query *sqlds.Query, args []string) (string, error) {
 	return fmt.Sprintf("%s BETWEEN date '%s' AND date '%s'", column, from, to), nil
 }
 
+func macroEdsId(query *sqlds.Query, args []string) (string, error) {
+	// args contains one element of empty string
+	if len(args) > 1 || args[0] != "" {
+		return "", errors.WithMessagef(sqlds.ErrorBadArgumentCount, "expected 0 arguments, received %d", len(args))
+	}
+
+	return fmt.Sprintf("be078ded-503b-4baa-bdad-0f7697864340"), nil
+}
+
 var macros = map[string]sqlds.MacroFunc{
-	"dateFilter":      macroDateFilter,
-	"parseTime":       macroParseTime,
-	"unixEpochFilter": macroUnixEpochFilter,
-	"timeFilter":      macroTimeFilter,
-	"rawTimeFrom":     macroRawTimeFrom,
-	"timeFrom":        macroTimeFrom,
-	"timeGroup":       macroTimeGroup,
-	"unixEpochGroup":  macroUnixEpochGroup,
-	"rawTimeTo":       macroRawTimeTo,
-	"timeTo":          macroTimeTo,
+	"dateFilter":  macroDateFilter,
+	"parseTime":   macroParseTime,
+	"timeFilter":  macroTimeFilter,
+	"rawTimeFrom": macroRawTimeFrom,
+	"timeFrom":    macroTimeFrom,
+	"timeGroup":   macroTimeGroup,
+	"rawTimeTo":   macroRawTimeTo,
+	"timeTo":      macroTimeTo,
+	"edsId":       macroEdsId,
 }
 
 func (s *CtlDatasource) Macros() sqlds.Macros {
