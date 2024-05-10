@@ -13,5 +13,8 @@ services:
     volumes:
       - ./dist:/var/lib/grafana/plugins/emnify-plugin-datasource
       - ./provisioning:/etc/grafana/provisioning
+      - ~/.aws:/usr/share/grafana/.aws:ro
     environment:
-      - GF_ALLOW_LOADING_UNSIGNED_PLUGINS=emnify-plugin-datasource
+      - GF_ALLOW_LOADING_UNSIGNED_PLUGINS=emnify-cloudtraillake-datasource
+      - GF_LOG_LEVEL=debug
+      - GF_LOG_FILTERS=token:info secrets.kvstore:info ngalert.scheduler:info
