@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/arn"
 	"github.com/aws/aws-sdk-go/service/cloudtrail"
 	"github.com/emnify/cloud-trail-lake/pkg/plugin/models"
 	"github.com/grafana/grafana-aws-sdk/pkg/awsds"
@@ -12,7 +13,9 @@ import (
 	sqlModels "github.com/grafana/grafana-aws-sdk/pkg/sql/models"
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
 	sdkhttpclient "github.com/grafana/grafana-plugin-sdk-go/backend/httpclient"
+	"github.com/grafana/grafana-plugin-sdk-go/backend/log"
 	"github.com/grafana/sqlds/v2"
+	"strings"
 )
 
 type API struct {
@@ -154,16 +157,36 @@ func (c *API) getOptionWithDefault(options sqlds.Options, option string) string 
 	return v
 }
 
-func (c *API) Databases(ctx aws.Context, options sqlds.Options) ([]string, error) {
+func (c *API) EventDataStores(ctx aws.Context) ([]models.EventDataStore, error) {
+	log.DefaultLogger.Debug("Listing Event Data Stores")
+
 	dbResp, err := c.Client.ListEventDataStoresWithContext(ctx, &cloudtrail.ListEventDataStoresInput{})
 	if err != nil {
 		return nil, fmt.Errorf("%w: %v", api.ExecuteError, err)
 	}
 
-	res := []string{}
+	res := []models.EventDataStore{}
 	for _, eventStore := range dbResp.EventDataStores {
-		res = append(res, *eventStore.Name)
+		// we only want the resource part of the EDS ARN
+		edsArn, _ := arn.Parse(aws.StringValue(eventStore.EventDataStoreArn))
+
+		name := *eventStore.Name
+		id := strings.Replace(edsArn.Resource, "eventdatastore/", "", 1)
+
+		log.DefaultLogger.Debug("Found EDS", "name", name, "id", id)
+
+		res = append(res, models.EventDataStore{
+			Name: name,
+			Id:   id,
+		})
 	}
+	return res, nil
+}
+
+func (c *API) Databases(ctx aws.Context, options sqlds.Options) ([]string, error) {
+	// TODO is that enough?
+	res := []string{}
+	res = append(res, "mytestsdatabase")
 	return res, nil
 }
 
@@ -172,7 +195,6 @@ func (c *API) Schemas(ctx aws.Context, options sqlds.Options) ([]string, error) 
 	res := []string{}
 	res = append(res, "mytestschema")
 	return res, nil
-
 }
 func (c *API) Tables(ctx aws.Context, options sqlds.Options) ([]string, error) {
 	// TODO is that enough?

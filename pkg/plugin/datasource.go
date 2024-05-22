@@ -41,6 +41,7 @@ type CtlDatasourceIface interface {
 	sqlds.Completable
 	sqlAPI.Resources
 	awsds.AsyncDriver
+	EventDataStores(ctx context.Context, options sqlds.Options) ([]models.EventDataStore, error)
 }
 
 type awsDSClient interface {
@@ -85,7 +86,7 @@ func (s *CtlDatasource) Converters() (sc []sqlutil.Converter) {
 // Connect opens a sql.DB connection using datasource settings
 func (s *CtlDatasource) Connect(config backend.DataSourceInstanceSettings, queryArgs json.RawMessage) (*sql.DB, error) {
 
-	log.DefaultLogger.Info("XXXXXX datasource / Connect")
+	log.DefaultLogger.Info("Connect")
 
 	s.awsDS.Init(config)
 	args, err := parseArgs(queryArgs)
@@ -103,7 +104,7 @@ func (s *CtlDatasource) Connect(config backend.DataSourceInstanceSettings, query
 }
 
 func (s *CtlDatasource) GetAsyncDB(config backend.DataSourceInstanceSettings, queryArgs json.RawMessage) (awsds.AsyncDB, error) {
-	log.DefaultLogger.Info("XXXXXX datasource / GetAsyncDB")
+	log.DefaultLogger.Debug("GetAsyncDB")
 
 	s.awsDS.Init(config)
 	args, err := sqlds.ParseOptions(queryArgs)
@@ -116,7 +117,7 @@ func (s *CtlDatasource) GetAsyncDB(config backend.DataSourceInstanceSettings, qu
 }
 
 func (s *CtlDatasource) getApi(ctx context.Context, options sqlds.Options) (*api.API, error) {
-	log.DefaultLogger.Info("XXXXXX datasource / getApi")
+	log.DefaultLogger.Info("datasource / getApi")
 
 	id := datasource.GetDatasourceID(ctx)
 	args := sqlds.Options{}
@@ -144,6 +145,18 @@ func (s *CtlDatasource) Regions(ctx context.Context) ([]string, error) {
 		return nil, err
 	}
 	return regions, nil
+}
+
+func (s *CtlDatasource) EventDataStores(ctx context.Context, options sqlds.Options) ([]models.EventDataStore, error) {
+	api, err := s.getApi(ctx, options)
+	if err != nil {
+		return nil, err
+	}
+	dbs, err := api.EventDataStores(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return dbs, nil
 }
 
 func (s *CtlDatasource) Databases(ctx context.Context, options sqlds.Options) ([]string, error) {

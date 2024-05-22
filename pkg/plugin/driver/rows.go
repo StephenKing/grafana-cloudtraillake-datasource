@@ -6,7 +6,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/cloudtrail"
 	"github.com/aws/aws-sdk-go/service/cloudtrail/cloudtrailiface"
-	"github.com/grafana/grafana-plugin-sdk-go/backend/log"
 	"io"
 	"strconv"
 	"time"
@@ -59,7 +58,6 @@ func (r *Rows) Close() error {
 // size as the Columns() are wide. io.EOF should be returned when there are no more rows.
 func (r *Rows) Next(dest []driver.Value) error {
 	if r.done {
-		log.DefaultLogger.Info("Next done")
 		return io.EOF
 	}
 
@@ -93,7 +91,7 @@ func convertRow(data []map[string]*string, ret []driver.Value) error {
 	for _, row := range data {
 		for key, stringVal := range row {
 			if key == "eventTime" || key == "time" {
-				log.DefaultLogger.Warn("Attempting to parse datetime", "key", key, "value", stringVal)
+				// log.DefaultLogger.Debug("Attempting to parse datetime", "key", key, "value", stringVal)
 				timeValue, err := time.Parse("2006-01-02 15:04:05", *stringVal)
 				if err != nil {
 					return err
@@ -105,15 +103,15 @@ func convertRow(data []map[string]*string, ret []driver.Value) error {
 
 			intVal, err := strconv.Atoi(*stringVal)
 			if err != nil {
-				log.DefaultLogger.Warn("Could not parse to int", "key", key, "value", stringVal)
+				// log.DefaultLogger.Debug("Could not parse to int", "key", key, "value", stringVal)
 			} else {
-				log.DefaultLogger.Warn("Successfully parsed to int", "key", key, "value", stringVal, "intValue", intVal)
+				// log.DefaultLogger.Debug("Successfully parsed to int", "key", key, "value", stringVal, "intValue", intVal)
 				ret[i] = intVal
 				i++
 				continue
 			}
 
-			log.DefaultLogger.Warn("Using it as string", "key", key, "value", stringVal)
+			// log.DefaultLogger.Debug("Using it as string", "key", key, "value", stringVal)
 			ret[i] = *stringVal
 			i++
 		}

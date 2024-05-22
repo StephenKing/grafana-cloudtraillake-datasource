@@ -26,10 +26,9 @@ export interface CtlQuery extends SQLQuery {
   format: FormatOptions;
   connectionArgs: {
     region?: string;
-    testOption?: string;
-    testOption2?: string;
   };
 
+  edsId?: string;
   queryID?: string;
 }
 export const defaultKey = '__default';
@@ -39,13 +38,16 @@ export const defaultQuery: Partial<CtlQuery> = {
   connectionArgs: {
     region: defaultKey,
   },
+  edsId: defaultKey,
 };
 /**
  * These are options configured for each DataSource instance
  */
 export interface CtlDataSourceOptions extends AwsAuthDataSourceJsonData {
-  testOption?: string
-  testOption2?: string
+  eventDataStore?: {
+    name: string;
+    id: string;
+  }
 }
 
 export interface CtlDataSourceSecureJsonData extends AwsAuthDataSourceSecureJsonData {}

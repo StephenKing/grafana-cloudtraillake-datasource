@@ -6,13 +6,17 @@ import { ResourceSelector } from '@grafana/aws-sdk';
 import SQLEditor from 'SQLEditor';
 import {CtlDataSourceOptions, CtlQuery, defaultQuery} from "./types";
 import {selectors} from "./tests/selectors";
-import {appendTemplateVariables} from "./utils";
 
 type Props = QueryEditorProps<DataSource, CtlQuery, CtlDataSourceOptions> & {
   hideOptions?: boolean;
 };
 
-type QueryProperties = 'regions';
+type QueryProperties = 'regions' |'eventDataStore';
+
+type EventDataStore = {
+  name: string,
+  id: string,
+}
 
 export function QueryEditorForm(props: Props) {
   const [] = useState(false);
@@ -26,10 +30,15 @@ export function QueryEditorForm(props: Props) {
     },
   };
 
-  const templateVariables = props.datasource.getVariables();
+  const fetchRegions = async () => {
+    const region: string[] = await props.datasource.getResource('regions');
+    return region.map((region) =>  ({label: region, value: region}));
+  }
 
-  const fetchRegions = () =>
-    props.datasource.getRegions().then((regions) => appendTemplateVariables(templateVariables, regions));
+  const fetchEventDatastores = async () => {
+    const eds: EventDataStore[] = await props.datasource.getResource('eventDataStores');
+    return eds.map((eds) =>  ({label: eds.id, value: eds.id}));
+  }
 
   const onChange = (prop: QueryProperties) => (e: SelectableValue<string> | null) => {
     const newQuery = { ...props.query };
@@ -37,6 +46,10 @@ export function QueryEditorForm(props: Props) {
     switch (prop) {
       case 'regions':
         newQuery.connectionArgs = { ...newQuery.connectionArgs, region: value };
+        break;
+      case 'eventDataStore':
+        console.log("onChange, edsId", value)
+        newQuery.edsId = value;
         break;
     }
     props.onChange(newQuery);
@@ -53,8 +66,19 @@ export function QueryEditorForm(props: Props) {
             default={props.datasource.defaultRegion}
             label={selectors.components.ConfigEditor.region.input}
             data-testid={selectors.components.ConfigEditor.region.wrapper}
-            labelWidth={11}
-            className="width-12"
+            labelWidth={20}
+            className="width-16"
+          />
+          <ResourceSelector
+              onChange={onChange('eventDataStore')}
+              fetch={fetchEventDatastores}
+              value={queryWithDefaults.edsId ||  null}
+              default={props.datasource.defaultEdsId}
+              tooltip="Use the selected EDS with the $__edsId macro"
+              label={selectors.components.ConfigEditor.EventDataStore.input}
+              data-testid={selectors.components.ConfigEditor.EventDataStore.wrapper}
+              labelWidth={20}
+              className="width-16"
           />
         </div>
 

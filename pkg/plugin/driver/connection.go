@@ -3,6 +3,7 @@ package driver
 import (
 	"context"
 	"database/sql/driver"
+	"errors"
 	"fmt"
 	"github.com/aws/aws-sdk-go/service/cloudtrail"
 	"github.com/emnify/cloud-trail-lake/pkg/plugin/api"
@@ -26,11 +27,13 @@ func newConnection(api *api.API) *conn {
 }
 
 func (c *conn) StartQuery(ctx context.Context, query string, args ...interface{}) (string, error) {
+	log.DefaultLogger.Debug("About to execute query", "query", query)
 	output, err := c.api.Execute(ctx, &sqlAPI.ExecuteQueryInput{Query: query})
 	if err != nil {
-		return "", err
+		log.DefaultLogger.Info("Failed to submit query", "error", err, "query", query)
+		return "", errors.New(err.Error() + "\nQuery: " + query)
 	}
-	log.DefaultLogger.Warn("Submitted query", "queryId", output.ID, "query", query)
+	log.DefaultLogger.Debug("Submitted query", "queryId", output.ID, "query", query)
 	return output.ID, nil
 }
 
@@ -58,17 +61,18 @@ func (c *conn) QueryStatus(ctx context.Context, queryID string) (awsds.QueryStat
 	case cloudtrail.QueryStatusTimedOut:
 		returnStatus = awsds.QueryFailed
 	}
-	backend.Logger.Warn("QueryStatus", "state", status.State, "queryID", queryID)
+	backend.Logger.Debug("QueryStatus", "state", status.State, "queryID", queryID)
 	return returnStatus, nil
 }
 
 func (c *conn) CancelQuery(ctx context.Context, queryID string) error {
-	log.DefaultLogger.Warn("Query canceled", "queryId", queryID)
+	log.DefaultLogger.Debug("Query canceled", "queryId", queryID)
 	return c.api.Stop(&sqlAPI.ExecuteQueryOutput{ID: queryID})
 
 }
 
 func (c *conn) GetRows(ctx context.Context, queryID string) (driver.Rows, error) {
+	log.DefaultLogger.Debug("GetRows", "queryId", queryID)
 	return NewRows(ctx, c.api.Client, queryID)
 }
 

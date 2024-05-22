@@ -9,6 +9,7 @@ import { annotationSupport } from './annotationSupport';
 
 export class DataSource extends DatasourceWithAsyncBackend<CtlQuery, CtlDataSourceOptions> {
   defaultRegion = '';
+  defaultEdsId = '';
 
   constructor(
       instanceSettings: DataSourceInstanceSettings<CtlDataSourceOptions>,
@@ -16,6 +17,7 @@ export class DataSource extends DatasourceWithAsyncBackend<CtlQuery, CtlDataSour
   ) {
     super(instanceSettings);
     this.defaultRegion = instanceSettings.jsonData.defaultRegion || '';
+    this.defaultEdsId = instanceSettings.jsonData.eventDataStore?.id || '';
   }
 
   annotations = annotationSupport;
@@ -31,9 +33,15 @@ export class DataSource extends DatasourceWithAsyncBackend<CtlQuery, CtlDataSour
 
   getRegions = () => this.getResource('regions');
 
+  getEventDataStores = () => this.getResource('eventDataStores');
+
   buildQuery(options: DataQueryRequest<CtlQuery>, queries: CtlQuery[]): CtlQuery[] {
     const updatedQueries = queries.map((query) => {
       query.connectionArgs.region = this.templateSrv.replace(query.connectionArgs.region, options.scopedVars);
+      query.edsId = this.templateSrv.replace(query.edsId, options.scopedVars);
+      console.log("buildQuery - query", query)
+      console.log("buildQuery - scopedVars", options.scopedVars)
+      console.log("buildQuery - edsId", query.edsId)
       return query;
     });
 

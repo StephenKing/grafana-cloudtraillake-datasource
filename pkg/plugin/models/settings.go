@@ -16,6 +16,12 @@ const (
 type CloudTrailLakeDataSourceSettings struct {
 	awsds.AWSDatasourceSettings
 	Config backend.DataSourceInstanceSettings
+	EventDataStore
+}
+
+type EventDataStore struct {
+	Name string `json:"name"`
+	Id   string `json:"id"`
 }
 
 func New() models.Settings {
