@@ -1,8 +1,9 @@
 package plugin
 
 import (
+	"encoding/json"
 	"fmt"
-	"github.com/emnify/cloud-trail-lake/pkg/plugin/models"
+	"github.com/unknwon/log"
 	"strings"
 	"time"
 
@@ -26,7 +27,7 @@ func parseTime(target, format string) string {
 	return fmt.Sprintf("parse_datetime(%s,%s)", target, format)
 }
 
-func parseTimeGroup(query *models.Query, args []string) (time.Duration, string, error) {
+func parseTimeGroup(query *sqlds.Query, args []string) (time.Duration, string, error) {
 	if len(args) < 2 {
 		return 0, "", errors.WithMessagef(sqlds.ErrorBadArgumentCount, "macro $__timeGroup needs time column and interval")
 	}
@@ -44,7 +45,7 @@ func parseTimeGroup(query *models.Query, args []string) (time.Duration, string, 
 	return interval, timeVar, nil
 }
 
-func macroTimeGroup(query *models.Query, args []string) (string, error) {
+func macroTimeGroup(query *sqlds.Query, args []string) (string, error) {
 	interval, timeVar, err := parseTimeGroup(query, args)
 	if err != nil {
 		return "", err
@@ -52,7 +53,7 @@ func macroTimeGroup(query *models.Query, args []string) (string, error) {
 	return fmt.Sprintf("FROM_UNIXTIME(FLOOR(TO_UNIXTIME(%s)/%v)*%v)", timeVar, interval.Seconds(), interval.Seconds()), nil
 }
 
-func macroUnixEpochGroup(query *models.Query, args []string) (string, error) {
+func macroUnixEpochGroup(query *sqlds.Query, args []string) (string, error) {
 	interval, timeVar, err := parseTimeGroup(query, args)
 	if err != nil {
 		return "", err
@@ -60,7 +61,7 @@ func macroUnixEpochGroup(query *models.Query, args []string) (string, error) {
 	return fmt.Sprintf("FROM_UNIXTIME(FLOOR(%s/%v)*%v)", timeVar, interval.Seconds(), interval.Seconds()), nil
 }
 
-func macroParseTime(query *models.Query, args []string) (string, error) {
+func macroParseTime(query *sqlds.Query, args []string) (string, error) {
 	if len(args) < 1 {
 		return "", errors.WithMessagef(sqlds.ErrorBadArgumentCount, "expected at least one argument")
 	}
@@ -77,7 +78,7 @@ func macroParseTime(query *models.Query, args []string) (string, error) {
 	return parseTime(column, timeFormat), nil
 }
 
-func macroTimeFilter(query *models.Query, args []string) (string, error) {
+func macroTimeFilter(query *sqlds.Query, args []string) (string, error) {
 	if len(args) < 1 {
 		return "", errors.WithMessagef(sqlds.ErrorBadArgumentCount, "expected at least one argument")
 	}
@@ -97,7 +98,7 @@ func macroTimeFilter(query *models.Query, args []string) (string, error) {
 	return fmt.Sprintf("%s BETWEEN TIMESTAMP '%s' AND TIMESTAMP '%s'", timeVar, from, to), nil
 }
 
-func macroUnixEpochFilter(query *models.Query, args []string) (string, error) {
+func macroUnixEpochFilter(query *sqlds.Query, args []string) (string, error) {
 	if len(args) != 1 {
 		return "", errors.WithMessagef(sqlds.ErrorBadArgumentCount, "expected one argument")
 	}
@@ -111,12 +112,12 @@ func macroUnixEpochFilter(query *models.Query, args []string) (string, error) {
 	return fmt.Sprintf("%s BETWEEN %d AND %d", column, from, to), nil
 }
 
-func macroTimeFrom(query *models.Query, args []string) (string, error) {
+func macroTimeFrom(query *sqlds.Query, args []string) (string, error) {
 	return fmt.Sprintf("TIMESTAMP '%s'", query.TimeRange.From.UTC().Format(goTimestampFormat)), nil
 
 }
 
-func macroRawTimeFrom(query *models.Query, args []string) (string, error) {
+func macroRawTimeFrom(query *sqlds.Query, args []string) (string, error) {
 	format := timestampFormat
 	if len(args) == 1 && args[0] != "" {
 		format = args[0]
@@ -125,11 +126,11 @@ func macroRawTimeFrom(query *models.Query, args []string) (string, error) {
 	return query.TimeRange.From.UTC().Format(timeLayout), nil
 }
 
-func macroTimeTo(query *models.Query, args []string) (string, error) {
+func macroTimeTo(query *sqlds.Query, args []string) (string, error) {
 	return fmt.Sprintf("TIMESTAMP '%s'", query.TimeRange.To.UTC().Format(goTimestampFormat)), nil
 }
 
-func macroRawTimeTo(query *models.Query, args []string) (string, error) {
+func macroRawTimeTo(query *sqlds.Query, args []string) (string, error) {
 	format := timestampFormat
 	if len(args) == 1 && args[0] != "" {
 		format = args[0]
@@ -138,7 +139,7 @@ func macroRawTimeTo(query *models.Query, args []string) (string, error) {
 	return query.TimeRange.To.UTC().Format(timeLayout), nil
 }
 
-func macroDateFilter(query *models.Query, args []string) (string, error) {
+func macroDateFilter(query *sqlds.Query, args []string) (string, error) {
 	if len(args) != 1 {
 		return "", errors.WithMessagef(sqlds.ErrorBadArgumentCount, "expected 1 argument, received %d", len(args))
 	}
@@ -152,22 +153,28 @@ func macroDateFilter(query *models.Query, args []string) (string, error) {
 	return fmt.Sprintf("%s BETWEEN date '%s' AND date '%s'", column, from, to), nil
 }
 
-func macroEdsId(query *models.Query, args []string) (string, error) {
+func macroEdsId(query *sqlds.Query, args []string) (string, error) {
 	// args contains one element of empty string
 	if len(args) > 1 || args[0] != "" {
 		return "", errors.WithMessagef(sqlds.ErrorBadArgumentCount, "expected 0 arguments, received %d", len(args))
 	}
 
-	return query.EdsId, nil
-
-	// return fmt.Sprintf("be078ded-503b-4baa-bdad-0f7697864340"), nil
+	var connectionArgs ctlQueryArgs
+	err := json.Unmarshal(
+		query.ConnectionArgs,
+		&connectionArgs,
+	)
+	if err != nil {
+		log.Warn("Error unmarshalling connectionArgs Json", err)
+	}
+	return fmt.Sprintf("%s", connectionArgs.EdsId), nil
 }
 
-type Macros map[string]MacroFunc
+// type Macros map[string]MacroFunc
+//
+// type MacroFunc func(*sqlds.Query, []string) (string, error)
 
-type MacroFunc func(*models.Query, []string) (string, error)
-
-var macros = map[string]MacroFunc{
+var macros = map[string]sqlds.MacroFunc{
 	"dateFilter":  macroDateFilter,
 	"parseTime":   macroParseTime,
 	"timeFilter":  macroTimeFilter,
@@ -179,6 +186,6 @@ var macros = map[string]MacroFunc{
 	"edsId":       macroEdsId,
 }
 
-func (s *CtlDatasource) Macros() Macros {
+func (s *CtlDatasource) Macros() sqlds.Macros {
 	return macros
 }

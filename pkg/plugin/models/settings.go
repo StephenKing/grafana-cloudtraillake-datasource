@@ -11,17 +11,13 @@ import (
 
 const (
 	Region = "region"
+	EdsId  = "edsId"
 )
 
 type CloudTrailLakeDataSourceSettings struct {
 	awsds.AWSDatasourceSettings
 	Config backend.DataSourceInstanceSettings
-	EventDataStore
-}
-
-type EventDataStore struct {
-	Name string `json:"name"`
-	Id   string `json:"id"`
+	EdsId  string
 }
 
 func New() models.Settings {
@@ -51,6 +47,11 @@ func (s *CloudTrailLakeDataSourceSettings) Apply(args sqlds.Options) {
 		} else {
 			s.Region = region
 		}
+	}
+
+	eds := args[EdsId]
+	if eds != "" {
+		s.EdsId = eds
 	}
 
 }

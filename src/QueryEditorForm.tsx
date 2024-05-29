@@ -11,12 +11,7 @@ type Props = QueryEditorProps<DataSource, CtlQuery, CtlDataSourceOptions> & {
   hideOptions?: boolean;
 };
 
-type QueryProperties = 'regions' |'eventDataStore';
-
-type EventDataStore = {
-  name: string,
-  id: string,
-}
+type QueryProperties = 'regions' |'edsId';
 
 export function QueryEditorForm(props: Props) {
   const [] = useState(false);
@@ -36,8 +31,8 @@ export function QueryEditorForm(props: Props) {
   }
 
   const fetchEventDatastores = async () => {
-    const eds: EventDataStore[] = await props.datasource.getResource('eventDataStores');
-    return eds.map((eds) =>  ({label: eds.id, value: eds.id}));
+    const eds: string[] = await props.datasource.getResource('eventDataStores');
+    return eds.map((eds) =>  ({label: eds, value: eds, id: eds}));
   }
 
   const onChange = (prop: QueryProperties) => (e: SelectableValue<string> | null) => {
@@ -47,9 +42,9 @@ export function QueryEditorForm(props: Props) {
       case 'regions':
         newQuery.connectionArgs = { ...newQuery.connectionArgs, region: value };
         break;
-      case 'eventDataStore':
+      case 'edsId':
         console.log("onChange, edsId", value)
-        newQuery.edsId = value;
+        newQuery.connectionArgs = { ...newQuery.connectionArgs, edsId: value };
         break;
     }
     props.onChange(newQuery);
@@ -70,9 +65,9 @@ export function QueryEditorForm(props: Props) {
             className="width-16"
           />
           <ResourceSelector
-              onChange={onChange('eventDataStore')}
+              onChange={onChange('edsId')}
               fetch={fetchEventDatastores}
-              value={queryWithDefaults.edsId ||  null}
+              value={queryWithDefaults.connectionArgs.edsId ??  null}
               default={props.datasource.defaultEdsId}
               tooltip="Use the selected EDS with the $__edsId macro"
               label={selectors.components.ConfigEditor.EventDataStore.input}

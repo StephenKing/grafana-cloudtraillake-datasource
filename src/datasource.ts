@@ -17,7 +17,7 @@ export class DataSource extends DatasourceWithAsyncBackend<CtlQuery, CtlDataSour
   ) {
     super(instanceSettings);
     this.defaultRegion = instanceSettings.jsonData.defaultRegion || '';
-    this.defaultEdsId = instanceSettings.jsonData.eventDataStore?.id || '';
+    this.defaultEdsId = instanceSettings.jsonData.edsId || '';
   }
 
   annotations = annotationSupport;
@@ -38,10 +38,10 @@ export class DataSource extends DatasourceWithAsyncBackend<CtlQuery, CtlDataSour
   buildQuery(options: DataQueryRequest<CtlQuery>, queries: CtlQuery[]): CtlQuery[] {
     const updatedQueries = queries.map((query) => {
       query.connectionArgs.region = this.templateSrv.replace(query.connectionArgs.region, options.scopedVars);
-      query.edsId = this.templateSrv.replace(query.edsId, options.scopedVars);
+      query.connectionArgs.edsId = this.templateSrv.replace(query.connectionArgs.edsId, options.scopedVars);
       console.log("buildQuery - query", query)
       console.log("buildQuery - scopedVars", options.scopedVars)
-      console.log("buildQuery - edsId", query.edsId)
+      console.log("buildQuery - edsId", query.connectionArgs.edsId)
       return query;
     });
 

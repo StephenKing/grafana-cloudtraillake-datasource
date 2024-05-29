@@ -7,8 +7,6 @@ import { selectors } from 'tests/selectors';
 
 type Props = DataSourcePluginOptionsEditorProps<CtlDataSourceOptions, CtlDataSourceSecureJsonData>;
 
-type EventDataStore = { name: string; id: string }
-
 export function ConfigEditor(props: Props) {
     const baseURL = `/api/datasources/${props.options.id}`;
     const resourcesURL = `${baseURL}/resources`;
@@ -29,8 +27,8 @@ export function ConfigEditor(props: Props) {
     };
 
     const fetchEventDataStores = async () => {
-        const res: EventDataStore[] = await getBackendSrv().get(resourcesURL + '/eventDataStores');
-        return res.map((eds) => ({ label: eds.name , value: eds.id, description: eds.id }));
+        const res: string[] = await getBackendSrv().get(resourcesURL + '/eventDataStores');
+        return res.map((eds) => ({ label: eds, value: eds, id: eds }));
     };
     const onOptionsChange = (options: DataSourceSettings<CtlDataSourceOptions, CtlDataSourceSecureJsonData>) => {
         setSaved(false);
@@ -38,13 +36,12 @@ export function ConfigEditor(props: Props) {
     };
 
     const onChangeEventDataStore = (e: SelectableValue<string> | null) => {
-        const value = e?.value ?? '';
-        const label = e?.label ?? '';
+        const value = e?.value;
         props.onOptionsChange({
             ...props.options,
             jsonData: {
                 ...props.options.jsonData,
-                eventDataStore: { id: value, name: label },
+                edsId: value
             },
         });
     };
@@ -56,7 +53,7 @@ export function ConfigEditor(props: Props) {
 
             <ConfigSelect
                 {...props}
-                value={props.options.jsonData.eventDataStore?.name ?? ''}
+                value={props.options.jsonData.edsId ?? ''}
                 onChange={onChangeEventDataStore}
                 fetch={fetchEventDataStores}
                 label={selectors.components.ConfigEditor.EventDataStore.input}

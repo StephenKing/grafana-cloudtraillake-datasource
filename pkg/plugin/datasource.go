@@ -34,6 +34,7 @@ import (
 
 type ctlQueryArgs struct {
 	Region string
+	EdsId  string
 }
 
 type CtlDatasourceIface interface {
@@ -41,7 +42,7 @@ type CtlDatasourceIface interface {
 	sqlds.Completable
 	sqlAPI.Resources
 	awsds.AsyncDriver
-	EventDataStores(ctx context.Context, options sqlds.Options) ([]models.EventDataStore, error)
+	EventDataStores(ctx context.Context, options sqlds.Options) ([]string, error)
 }
 
 type awsDSClient interface {
@@ -100,6 +101,10 @@ func (s *CtlDatasource) Connect(config backend.DataSourceInstanceSettings, query
 		args["region"] = sqlModels.DefaultKey
 	}
 
+	// needed?
+	if args["edsId"] == "" {
+		args["edsId"] = sqlModels.DefaultKey
+	}
 	return s.awsDS.GetDB(config.ID, args, models.New, api.New, driver.NewSync)
 }
 
@@ -147,7 +152,7 @@ func (s *CtlDatasource) Regions(ctx context.Context) ([]string, error) {
 	return regions, nil
 }
 
-func (s *CtlDatasource) EventDataStores(ctx context.Context, options sqlds.Options) ([]models.EventDataStore, error) {
+func (s *CtlDatasource) EventDataStores(ctx context.Context, options sqlds.Options) ([]string, error) {
 	api, err := s.getApi(ctx, options)
 	if err != nil {
 		return nil, err
@@ -295,6 +300,9 @@ func parseArgs(queryArgs json.RawMessage) (sqlds.Options, error) {
 	options := sqlds.Options{}
 	if args.Region != "" {
 		options[models.Region] = args.Region
+	}
+	if args.EdsId != "" {
+		options[models.EdsId] = args.EdsId
 	}
 	return options, nil
 }
