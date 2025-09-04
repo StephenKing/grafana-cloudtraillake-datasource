@@ -157,7 +157,7 @@ func (c *API) getOptionWithDefault(options sqlds.Options, option string) string 
 	return v
 }
 
-func (c *API) EventDataStores(ctx aws.Context) ([]models.EventDataStore, error) {
+func (c *API) EventDataStores(ctx aws.Context) ([]string, error) {
 	log.DefaultLogger.Debug("Listing Event Data Stores")
 
 	dbResp, err := c.Client.ListEventDataStoresWithContext(ctx, &cloudtrail.ListEventDataStoresInput{})
@@ -165,7 +165,7 @@ func (c *API) EventDataStores(ctx aws.Context) ([]models.EventDataStore, error) 
 		return nil, fmt.Errorf("%w: %v", api.ExecuteError, err)
 	}
 
-	res := []models.EventDataStore{}
+	res := []string{}
 	for _, eventStore := range dbResp.EventDataStores {
 		// we only want the resource part of the EDS ARN
 		edsArn, _ := arn.Parse(aws.StringValue(eventStore.EventDataStoreArn))
@@ -175,10 +175,7 @@ func (c *API) EventDataStores(ctx aws.Context) ([]models.EventDataStore, error) 
 
 		log.DefaultLogger.Debug("Found EDS", "name", name, "id", id)
 
-		res = append(res, models.EventDataStore{
-			Name: name,
-			Id:   id,
-		})
+		res = append(res, id)
 	}
 	return res, nil
 }

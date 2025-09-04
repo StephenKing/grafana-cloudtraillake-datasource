@@ -8,18 +8,16 @@ Work in progress, with a lot of copy&paste from the [Redshift](https://github.co
 
 Should have:
 
-- understand, how to properly convert field types
-    - plugin options
-    - query editor
-    - in TypeScript
+- fix QueryEditor drop down edsId
+
+- fix use in variables (missing query field)
+
 - documentation
     - variables
     - permissions
 - ship default dashboard with plugin
 - clean up code
 - Configuration
-  - remove test options
-  - allow to select default EDS
   - support Save & test
 
 Could have:
@@ -40,27 +38,19 @@ Nice, but outside of the scope of the plugin:
 
 To access data source settings, hover your mouse over the **Configuration** (gear) icon, then click **Data Sources**, and then click the AWS CloudTrail Lake data source.
 
-| Name                                | Description                                                                                                             |
-| ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| `Name`                              | The data source name. This is how you refer to the data source in panels and queries.                                   |
-| `Default`                           | Default data source means that it will be pre-selected for new panels.                                                  |
-| `Authentication Provider`           | Specify the provider to get credentials.                                                                                |
-| `Access Key ID`                     | If `Access & secret key` is selected, specify the Access Key of the security credentials to use.                        |
-| `Secret Access Key`                 | If `Access & secret key` is selected, specify the Secret Key of the security credentials to use.                        |
-| `Credentials Profile Name`          | Specify the name of the profile to use (if you use `~/.aws/credentials` file), leave blank for default.                 |
-| `Assume Role Arn` (optional)        | Specify the ARN of the role to assume.                                                                                  |
-| `External ID` (optional)            | If you are assuming a role in another account, that has been created with an external ID, specify the external ID here. |
-| `Endpoint` (optional)               | Optionally, specify a custom endpoint for the service.                                                                  |
-| `Default Region`                    | Region in which the cluster is deployed.                                                                                |
-| `AWS Secrets Manager`               | To authenticate with Amazon Redshift using AWS Secrets Manager.                                                         |
-| `Temporary credentials`             | To authenticate with Amazon Redshift using temporary database credentials.                                              |
-| `Serverless`                        | To use a Redshift Serverless workgroup.                                                                                   |
-| `Cluster Identifier`                | Redshift Provisioned Cluster to use (automatically set if using AWS Secrets Manager).                                   |
-| `Workgroup`                         | Redshift Serverless Workgroup to use.                                                                                   |
-| `Managed Secret`                    | When using AWS Secrets Manager, select the secret containing the credentials to access the database. Note that Provisioned and Serverless stores credentials in a different format. Refer to [Storing database credentials in AWS Secrets Manager](https://docs.aws.amazon.com/redshift/latest/mgmt/data-api-access.html#data-api-secrets) for instructions. |
-| `Database User`                     | User of the database. Automatically set if using AWS Secrets Manager.                                                   |
-| `Database`                          | Name of the database within the cluster or workgroup.                                                                                |
-| `Send events to Amazon EventBridge` | To send Data API events to Amazon EventBridge for monitoring purpose.                                                   |
+| Name                          | Description                                                                                                             |
+|-------------------------------|-------------------------------------------------------------------------------------------------------------------------|
+| `Name`                        | The data source name. This is how you refer to the data source in panels and queries.                                   |
+| `Default`                     | Default data source means that it will be pre-selected for new panels.                                                  |
+| `Authentication Provider`     | Specify the provider to get credentials.                                                                                |
+| `Access Key ID`               | If `Access & secret key` is selected, specify the Access Key of the security credentials to use.                        |
+| `Secret Access Key`           | If `Access & secret key` is selected, specify the Secret Key of the security credentials to use.                        |
+| `Credentials Profile Name`    | Specify the name of the profile to use (if you use `~/.aws/credentials` file), leave blank for default.                 |
+| `Assume Role Arn` (optional)  | Specify the ARN of the role to assume.                                                                                  |
+| `External ID` (optional)      | If you are assuming a role in another account, that has been created with an external ID, specify the external ID here. |
+| `Endpoint` (optional)         | Optionally, specify a custom endpoint for the service.                                                                  |
+| `Default Region`              | Region in which the cluster is deployed.                                                                                |
+| `Event Data Store` (optional) | Default Event Data Store to query.                                                                                      |
 
 ## Authentication
 
@@ -68,50 +58,32 @@ For authentication options and configuration details, see [AWS authentication](h
 
 ### IAM policies
 
-Grafana needs permissions granted via IAM to be able to read Redshift metrics. You can attach these permissions to IAM roles and utilize Grafana's built-in support for assuming roles. Note that you will need to [configure the required policy](https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_create.html) before adding the data source to Grafana. [You can check some predefined policies by AWS here](https://docs.aws.amazon.com/redshift/latest/mgmt/redshift-iam-access-control-identity-based.html#redshift-policy-resources.managed-policies).
+Grafana needs permissions granted via IAM to be able to query CloudTrail Lake. You can attach these permissions to IAM roles and utilize Grafana's built-in support for assuming roles. Note that you will need to [configure the required policy](https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_create.html) before adding the data source to Grafana. [You can check some predefined policies by AWS here](https://docs.aws.amazon.com/redshift/latest/mgmt/redshift-iam-access-control-identity-based.html#redshift-policy-resources.managed-policies).
 
-Here is a minimal policy example:
+Here is a policy example:
 
 ```json
 {
   "Version": "2012-10-17",
   "Statement": [
     {
-      "Sid": "AllowReadingMetricsFromRedshift",
+      "Sid": "AllowQueryingCloudTrailLake",
       "Effect": "Allow",
       "Action": [
-        "redshift-data:ListTables",
-        "redshift-data:DescribeTable",
-        "redshift-data:GetStatementResult",
-        "redshift-data:DescribeStatement",
-        "redshift-data:ListStatements",
-        "redshift-data:ListSchemas",
-        "redshift-data:ExecuteStatement",
-        "redshift-data:CancelStatement",
-        "redshift:GetClusterCredentials",
-        "redshift:DescribeClusters",
-        "redshift-serverless:ListWorkgroups",
-        "redshift-serverless:GetCredentials",
-        "secretsmanager:ListSecrets"
+        "cloudtrail:ListEventDataStores",
+        "cloudtrail:ListQueries",
+        "cloudtrail:StartQuery",
+        "cloudtrail:DescribeQuery",
+        "cloudtrail:CancelQuery",
+        "cloudtrail:GetQueryResults"
       ],
       "Resource": "*"
-    },
-    {
-      "Sid": "AllowReadingRedshiftQuerySecrets",
-      "Effect": "Allow",
-      "Action": ["secretsmanager:GetSecretValue"],
-      "Resource": "*",
-      "Condition": {
-        "Null": {
-          "secretsmanager:ResourceTag/RedshiftQueryOwner": "false"
-        }
-      }
     }
   ]
 }
 ```
 
-## Query Redshift data
+## Query CloudTrail Lake data
 
 The provided query editor is a standard SQL query editor. Grafana includes some macros to help with writing more complex timeseries queries.
 
@@ -130,20 +102,21 @@ The provided query editor is a standard SQL query editor. Grafana includes some 
 
 #### Table Visualization
 
-Most queries in Redshift will be best represented by a table visualization. Any query will display data in a table. If it can be queried, then it can be put in a table.
+Most queries in CloudTrail Lake will be best represented by a table visualization. Any query will display data in a table. If it can be queried, then it can be put in a table.
 
-This example returns results for a table visualization:
+This example returns results for a table visualization (replace your Event Data Store ID):
 
 ```sql
-SELECT {column_1}, {column_2} FROM {table};
+SELECT * FROM xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx;
 ```
+
 
 #### Timeseries / Graph visualizations
 
 For timeseries / graph visualizations, there are a few requirements:
 
-- A column with a `date` or `datetime` type must be selected
-- The `date` column must be in ascending order (using `ORDER BY column ASC`)
+- The date / time field must either be called either `eventTime` or `time`, so that it is automatically converted to time field. Alternatively, the field has to be converted to `Time` using the `Convert field type` transformation.
+- The `eventTime` column must be in ascending order (using `ORDER BY column ASC`)
 - A numeric column must also be selected
 
 To make a more reasonable graph, be sure to use the `$__timeFilter` and `$__timeGroup` macros.
@@ -152,30 +125,24 @@ Example timeseries query:
 
 ```sql
 SELECT
-  avg(execution_time) AS average_execution_time,
-  $__timeGroup(start_time, 'hour'),
-  query_type
+    eventSource,
+    $__timeGroup(eventTime, '1h') AS eventTime,
+        COUNT(*) AS eventCount
 FROM
-  account_usage.query_history
+    xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
 WHERE
-  $__timeFilter(start_time)
-group by
-  query_type,start_time
-order by
-  start_time,query_type ASC;
+    $__timeFilter(eventTime)
+GROUP BY eventSource, eventTime
+ORDER BY eventCount DESC
 ```
-
-##### Fill value
-
-When data frames are formatted as time series, you can choose how missing values should be filled. This in turn affects how they are rendered: with connected or disconnected values. To configure this value, change the "Fill Value" in the query editor.
 
 #### Inspecting the query
 
-Because Grafana supports macros that Redshift does not, the fully rendered query, which can be copy/pasted directly into Redshift, is visible in the Query Inspector. To view the full interpolated query, click the Query Inspector button, and the full query will be visible under the "Query" tab.
+Because Grafana supports macros that CloudTrail Lake does not, the fully rendered query, which can be copy/pasted directly into Redshift, is visible in the Query Inspector. To view the full interpolated query, click the Query Inspector button, and the full query will be visible under the "Query" tab.
 
 ### Templates and variables
 
-To add a new Redshift query variable, refer to [Add a query variable](https://grafana.com/docs/grafana/latest/variables/variable-types/add-query-variable/). Use your Redshift data source as your data source for the following available queries:
+To add a new CloudTrail Lake query variable, refer to [Add a query variable](https://grafana.com/docs/grafana/latest/variables/variable-types/add-query-variable/). Use your Cloud data source as your data source for the following available queries:
 
 Any value queried from a Redshift table can be used as a variable. Be sure to avoid selecting too many values, as this can cause performance issues.
 
@@ -189,27 +156,29 @@ After creating a variable, you can use it in your Redshift queries by using [Var
 
 ```sql
 SELECT
-  time as time,
-  environment as tags,
-  humidity as text
+    eventTime,
+    REPLACE(eventSource, '.amazonaws.com', '') AS tags,
+    REPLACE(eventSource, '.amazonaws.com', '') || '.' || eventName as title
 FROM
-  $__table
+    xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
 WHERE
-  $__timeFilter(time) and humidity > 95
+    $__timeFilter(eventTime) AND
+    readOnly = false
+    LIMIT 100
 ```
 
 The following table represents the values of the columns taken into account to render annotations:
 
-| Name      | Description                                                                                                                       |
-| --------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| `time`    | The name of the date/time field. Could be a column with a native SQL date/time data type or epoch value.                          |
-| `timeend` | Optional name of the end date/time field. Could be a column with a native SQL date/time data type or epoch value. (Grafana v6.6+) |
-| `text`    | Event description field.                                                                                                          |
-| `tags`    | Optional field name to use for event tags as a comma separated string.                                                            |
+| Name      | Description                                                                                                         |
+| --------- |---------------------------------------------------------------------------------------------------------------------|
+| `time`    | The name of the date/time field. Could be a column with a native SQL date/time data type or epoch value.            |
+| `timeend` | Optional name of the end date/time field. Could be a column with a native SQL date/time data type or epoch value.   |
+| `text`    | Event description field.                                                                                            |
+| `tags`    | Optional field name to use for event tags as a comma separated string.                                              |
 
-## Provision Redshift data source
+## Provision CloudTrail Lake data source
 
-You can configure the Redshift data source using configuration files with Grafana's provisioning system. For more information, refer to the [provisioning docs page](https://grafana.com/docs/grafana/latest/administration/provisioning/).
+You can configure the CloudTrail Lake data source using configuration files with Grafana's provisioning system. For more information, refer to the [provisioning docs page](https://grafana.com/docs/grafana/latest/administration/provisioning/).
 
 Here are some provisioning examples.
 
@@ -218,8 +187,8 @@ Here are some provisioning examples.
 ```yaml
 apiVersion: 1
 datasources:
-  - name: Redshift
-    type: redshift
+  - name: CloudTrail Lake
+    type: emnify-cloudtraillake-datasource
     jsonData:
       authType: default
       defaultRegion: eu-west-2
@@ -231,28 +200,12 @@ datasources:
 apiVersion: 1
 
 datasources:
-  - name: Redshift
-    type: redshift
+  - name: CloudTrail Lake
+    type: emnify-cloudtraillake-datasource
     jsonData:
       authType: credentials
       defaultRegion: eu-west-2
       profile: secondary
-```
-
-### Using `accessKey` and `secretKey`
-
-```yaml
-apiVersion: 1
-
-datasources:
-  - name: Redshift
-    type: grafana-redshift-datasource
-    jsonData:
-      authType: keys
-      defaultRegion: eu-west-2
-    secureJsonData:
-      accessKey: '<your access key>'
-      secretKey: '<your secret key>'
 ```
 
 ### Using AWS SDK Default and ARN of IAM Role to Assume
@@ -260,21 +213,21 @@ datasources:
 ```yaml
 apiVersion: 1
 datasources:
-  - name: Redshift
-    type: grafana-redshift-datasource
+  - name: CloudTrail Lake
+    type: emnify-cloudtraillake-datasource
     jsonData:
       authType: default
       assumeRoleArn: arn:aws:iam::123456789012:root
       defaultRegion: eu-west-2
 ```
 
-## Pre-configured Redshift dashboards
+## Pre-configured CloudTrail Lake dashboards
 
-Redshift data source ships with a pre-configured dashboard for some advanced monitoring parameters. This curated dashboard is based on similar dashboards in the [AWS Labs repository for Redshift](https://github.com/awslabs/amazon-redshift-monitoring). Check it out for more details.
+This CloudTrail Lake data source ships with a pre-configured dashboards, including the default dashboard provided by AWS.
 
 Follow these [instructions](https://grafana.com/docs/grafana/latest/dashboards/export-import/#importing-a-dashboard) for importing a dashboard in Grafana.
 
-Imported dashboards can be found in Configuration > Data Sources > select your Redshift data source > select the Dashboards tab to see available pre-made dashboards.
+Imported dashboards can be found in Configuration > Data Sources > select your CloudTrail Lake data source > select the Dashboards tab to see available pre-made dashboards.
 
 ## Get the most out of the plugin
 
@@ -283,17 +236,8 @@ Imported dashboards can be found in Configuration > Data Sources > select your R
 - Add [Transformations](https://grafana.com/docs/grafana/latest/panels/transformations/).
 - Set up alerting; refer to [Alerts overview](https://grafana.com/docs/grafana/latest/alerting/).
 
-## Async Query Data Support
 
-Async Query Data support enables an asynchronous query handling flow. With Async Query Data support enabled, queries will be handled over multiple requests (starting, checking its status, and fetching the results) instead of having a query be started and resolved over a single request. This is useful for queries that can potentially run for a long time and timeout.
-
-To enable async query data support, you need to set feature toggle `redshiftAsyncQueryDataSupport` to `true`. Here are instructions to [configure feature toggles](https://grafana.com/docs/grafana/latest/setup-grafana/configure-grafana/#feature_toggles). You'll also need to ensure the IAM policy used by Grafana allows the following actions `redshift-data:ListStatements` and `redshift-data:CancelStatement`.
-
-### Async Query Caching
-
-To enable [query caching](https://grafana.com/docs/grafana/latest/administration/data-source-management/#query-caching) for async queries, you need to be on Grafana version 10.1 or above, and to set the feature toggles `useCachingService` and `awsAsyncQueryCaching` to `true`. You'll also need to [configure query caching](https://grafana.com/docs/grafana/latest/administration/data-source-management/#query-caching) for the specific Redshift datasource.
-
-
+---
 
 # original content from scaffolding
 

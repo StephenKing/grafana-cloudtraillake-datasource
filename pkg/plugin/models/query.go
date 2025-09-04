@@ -12,7 +12,4 @@ type FormatQueryOption uint32
 // only additive.
 type Query struct {
 	*sqlds.Query
-
-	// Macros
-	EdsId string `json:"edsId,omitempty"`
 }
